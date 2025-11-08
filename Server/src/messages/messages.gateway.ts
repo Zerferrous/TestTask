@@ -31,6 +31,8 @@ export class MessagesGateway
 
   @OnEvent('message.recieved')
   handleNewMessage(dto: MessageDto) {
-    this.server.emit('newMessage', dto);
+    if (dto.direction === 'incoming') {
+      this.server.emit('newMessage', dto);
+    }
   }
 }
