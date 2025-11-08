@@ -2,11 +2,25 @@ services:
   frontend:
       build: ./Client
       ports:
-        - "5173:5173"
+        - 5173:5173
       restart: unless-stopped
   backend:
       build: ./Server
-      network_mode: host
       ports:
-        - "3000:3000"
+        - 3000:3000
       restart: unless-stopped
+  cloudpub:
+      image: cloudpub/cloudpub:latest
+      restart: unless-stopped
+      environment:
+        - TOKEN= #TOKEN
+        - HTTP=frontend:5173,backend:3000
+      command: run
+      depends_on:
+        - frontend
+        - backend
+      volumes:
+        - cloudpub-config:/home/cloudpub
+
+volumes:
+  cloudpub-config:
