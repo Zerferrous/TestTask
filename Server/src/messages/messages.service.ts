@@ -26,50 +26,78 @@ export class MessagesService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleInit() {
-    this.logger.log('Инициализация Puppeteer.');
-    this.browser = await puppeteer
-      .use(StealthPlugin())
-      .launch({ headless: true });
-    this.page = await this.browser.newPage();
-    this.logger.log('Переход на страницу авторизации...');
     try {
-      await this.page.goto('https://www.avito.ru/#login?authsrc=h');
-    } catch (error) {
-      this.logger.error('Ошибка при переходе на страницу.', error);
+      this.logger.log('Инициализация Puppeteer.');
+      this.browser = await puppeteer.use(StealthPlugin()).launch({
+        headless: true,
+        executablePath: '/usr/bin/chromium',
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      });
+      this.page = await this.browser.newPage();
+      this.logger.log('Переход на страницу авторизации...');
+      await this.page.goto('https://www.avito.ru/#login?authsrc=h', {
+        waitUntil: 'domcontentloaded',
+      });
+    } catch {
+      this.logger.error('Ошибка при переходе на страницу.');
     }
-    this.logger.log('Ввод логина...');
+
     try {
+      this.logger.log('Ожидание поля ввода логина...');
+      await this.page.locator('[data-marker="login-form/login/input"]').wait();
+    } catch (err) {
+      this.logger.error(
+        'Поле ввода логина не обнаружено.\nВозможные причины:\n1)Авито потребовал решение каптчи\n2)Авито заблокировал IP-адрес',
+      );
+      throw err;
+    }
+
+    try {
+      this.logger.log('Ввод логина...');
       await this.page
         .locator('[data-marker="login-form/login/input"]')
         .fill(this.configService.getOrThrow<string>('AVITO_USERNAME'));
-    } catch (error) {
-      this.logger.error('Ошибка при вводе логина.', error);
+    } catch (err) {
+      this.logger.error('Ошибка при вводе логина.');
+      throw err;
     }
-    this.logger.log('Ввод пароля...');
+
     try {
+      this.logger.log('Ввод пароля...');
       await this.page
         .locator('[data-marker="login-form/password/input"]')
         .fill(this.configService.getOrThrow<string>('AVITO_PASSWORD'));
-    } catch (error) {
-      this.logger.error('Ошибка при вводе пароля.', error);
+    } catch (err) {
+      this.logger.error('Ошибка при вводе пароля.');
+      throw err;
     }
+
     try {
       await this.page.locator('[data-marker="login-form/submit"]').click();
-    } catch (error) {
-      this.logger.error('Ошибка при подтверждении ввода.', error);
+    } catch (err) {
+      this.logger.error('Ошибка подтверждении данных.');
+      throw err;
     }
+
     try {
+      this.logger.log('Ожидание входа в аккаунт.');
       await this.page.locator('[data-marker="header/menu-profile"]').wait();
       this.logger.log('Выполнен вход в аккаунт.');
-    } catch (error) {
-      this.logger.error('Ошибка при входе в аккаунт.', error);
+    } catch (err) {
+      this.logger.error(
+        'Ошибка при входе в аккаунт. Возможно, потребовался код подтверждения (Отключите в настройках профиля Авито)',
+      );
+      throw err;
     }
-    this.logger.log('Переход на страницу сообщений...');
+
     try {
+      this.logger.log('Переход на страницу сообщений...');
       await this.page.goto('https://www.avito.ru/profile/messenger');
-    } catch (error) {
-      this.logger.error('Ошибка при переходе на страницу.', error);
+    } catch (err) {
+      this.logger.error('Ошибка при переходе на страницу сообщений.');
+      throw err;
     }
+
     this.logger.log('Поиск чата со слушаемым пользователем...');
     while (true) {
       try {
@@ -83,6 +111,7 @@ export class MessagesService implements OnModuleInit, OnModuleDestroy {
         this.logger.log('Чат не найден. Повтор...');
       }
     }
+
     try {
       this.logger.log('Открытие чата...');
       await this.page
@@ -90,10 +119,13 @@ export class MessagesService implements OnModuleInit, OnModuleDestroy {
           `[data-marker="channels/user-title"] span ::-p-text(${this.configService.getOrThrow<string>('AVITO_TARGET_USERNAME')})`,
         )
         .click();
-    } catch (error) {
-      this.logger.error('Ошибка при открытии чата.', error);
+    } catch (err) {
+      this.logger.error('Ошибка при открытии чата.');
+      throw err;
     }
+
     this.logger.log('Слушает сообщения...');
+
     this.page.on('console', (msg) => {
       try {
         const data: MessageDto = JSON.parse(msg.text());
@@ -108,6 +140,7 @@ export class MessagesService implements OnModuleInit, OnModuleDestroy {
         this.logger.debug(`Puppeteer log: ${msg.text()}`);
       }
     });
+
     await this.page.evaluate(() => {
       const messagesRoot = document.querySelector(
         '[data-marker="messagesHistory/list"]',
