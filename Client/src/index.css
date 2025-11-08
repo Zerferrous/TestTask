@@ -1,0 +1,58 @@
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+.rootDiv {
+    height: 100%;
+    width: 100%;
+    background-color: #ffffff;
+}
+
+.messagesDiv {
+    display: 'flex';
+    flex-direction: 'column';
+    gap: '10px';
+    background-color: #fff;
+
+}
+
+.notConnectedDiv {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #ff0000;
+    font-size: 20px;
+    text-align: center;
+}
+
+.msgDiv {
+
+    background-color: #213547;
+    margin: 20px;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+header {
+    padding: 10px;
+    width: 100%;
+    background-color: #213547;
+    text-align: center;
+    font-size: 20px;
+}
